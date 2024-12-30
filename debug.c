@@ -14,6 +14,14 @@ void disassembleChunk(Chunk* chunk, const char* name) {
         offset = disassembleInstruction(chunk, offset);
     }
 }
+
+//Prints name if the opcode and increments the next byte offset
+static int simpleInstruction(const char* name, int offset) {
+    printf("%s\n", name);
+    return offset + 1;
+}
+
+
  int disassembleInstruction(Chunk* chunk, int offset) {
     //Prints byte offset of the instruction
     printf("%04d ", offset);
