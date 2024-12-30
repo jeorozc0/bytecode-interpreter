@@ -10,6 +10,13 @@ void initChunk(Chunk *chunk) {
     chunk -> code = NULL;
 }
 
+/* We dealocate all the memory and init again to  zero out the fields
+ and leave the chunk in a well-defined empty state */
+void freeChunk(Chunk* chunk) {
+    FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
+    initChunk(chunk);
+}
+
 void writeChunk(Chunk *chunk, uint8_t byte) {
     if (chunk->capacity < chunk->count + 1) {
         int oldCapacity = chunk->capacity;
