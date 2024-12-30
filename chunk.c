@@ -8,12 +8,14 @@ void initChunk(Chunk *chunk) {
     chunk -> count = 0;
     chunk -> capacity = 0;
     chunk -> code = NULL;
+    initValueArray(&chunk->constants);
 }
 
 /* We dealocate all the memory and init again to  zero out the fields
  and leave the chunk in a well-defined empty state */
 void freeChunk(Chunk* chunk) {
     FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
+    freeValueArray(&chunk->constants);
     initChunk(chunk);
 }
 
