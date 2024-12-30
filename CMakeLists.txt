@@ -10,4 +10,5 @@ add_executable(Craftin_Interpreters main.c
         memory.h
         memory.c
         debug.h
-        debug.c)
+        debug.c
+        value.h)
