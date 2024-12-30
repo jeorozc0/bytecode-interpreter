@@ -8,4 +8,6 @@ add_executable(Craftin_Interpreters main.c
         chunk.h
         chunk.c
         memory.h
-        memory.c)
+        memory.c
+        debug.h
+        debug.c)
