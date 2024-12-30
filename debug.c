@@ -25,7 +25,7 @@ void disassembleChunk(Chunk* chunk, const char* name) {
      * in the compiler*/
     switch (instruction) {
         case OP_RETURN:
-            return simpleInstruction('OP_RETURN', offset);
+            return simpleInstruction("OP_RETURN", offset);
         default:
             printf("Unknown opcode %d\n", instruction);
         return offset + 1;
