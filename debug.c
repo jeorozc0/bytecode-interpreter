@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "debug.h"
+#include "value.h"
 
 void disassembleChunk(Chunk* chunk, const char* name) {
     //Print header of chunk
@@ -21,6 +22,19 @@ static int simpleInstruction(const char* name, int offset) {
     return offset + 1;
 }
 
+static int constantInstruction(const char* name, Chunk* chunk, int offset) {
+    uint8_t constant = chunk->code[offset + 1];
+    /* Print name of opcode, and pull the constant index from the
+     * subsequent byte in the chunk*/
+    printf("%-16s %4d '", name, constant);
+    /* Print the value of the constant, which are known at compile time*/
+    printValue(chunk->constants.values[constant]);
+    printf("'\n");
+    /*move offset by two, as OP_CONSTANT is two bytes,
+     *one for the opcode, and one for the operand*/
+    return offset + 2;
+}
+
 
  int disassembleInstruction(Chunk* chunk, int offset) {
     //Prints byte offset of the instruction
@@ -34,6 +48,8 @@ static int simpleInstruction(const char* name, int offset) {
     switch (instruction) {
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
+        case OP_CONSTANT:
+            return constantInstruction("OP_CONSTANT", chunk, offset);
         default:
             printf("Unknown opcode %d\n", instruction);
         return offset + 1;
