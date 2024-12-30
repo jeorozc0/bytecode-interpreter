@@ -39,6 +39,13 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
  int disassembleInstruction(Chunk* chunk, int offset) {
     //Prints byte offset of the instruction
     printf("%04d ", offset);
+    if (offset > 0 && chunk->lines[offset] == chunk->lines[offset-1]) {
+        /* Print | for every instruction that came from the same
+         * source line as the preceding one. */
+        printf(" | ");
+    } else {
+        printf("%4d ", chunk->lines[offset]);
+    }
 
     //Reads single byte from the bytecode at given offset
     uint8_t instruction = chunk->code[offset];
