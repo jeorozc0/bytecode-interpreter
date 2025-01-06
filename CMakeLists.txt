@@ -13,4 +13,5 @@ add_executable(Craftin_Interpreters main.c
         debug.c
         value.h
         value.c
-        vm.h)
+        vm.h
+        vm.c)
