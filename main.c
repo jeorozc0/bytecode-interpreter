@@ -16,6 +16,8 @@ int main(int argc, const char * argv[]) {
 
     //Given a chunk, this will print out the instructions
     disassembleChunk(&chunk, "test chunk");
+    interpret(&chunk);
+    freeVM();
     freeChunk(&chunk);
     return 0;
 }
