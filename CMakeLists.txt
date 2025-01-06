@@ -14,4 +14,8 @@ add_executable(Craftin_Interpreters main.c
         value.h
         value.c
         vm.h
-        vm.c)
+        vm.c
+        compiler.h
+        compiler.c
+        scanner.h
+        scanner.c)
