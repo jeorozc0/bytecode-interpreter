@@ -46,6 +46,15 @@ static char advance() {
     return scanner.current[-1];
 }
 
+static char peek() {
+    return *scanner.current;
+}
+
+static char peekNext() {
+    if (isAtEnd()) return  '\0';
+    return scanner.current[1];
+}
+
 static bool match(char expected) {
     if (isAtEnd()) return false;
     if (*scanner.current != expected) return false;
@@ -53,7 +62,34 @@ static bool match(char expected) {
     return true;
 }
 
+static void skipWhiteSpace() {
+    for (;;) {
+        char c = peek();
+        switch (c) {
+            case ' ':
+                case '\r':
+            case '\t':
+            advance();
+            break;
+            case '\n':
+                scanner.line++;
+            advance();
+            break;
+            case '/':
+                if (peekNext() == '/') {
+                    //A comment goes until the end of the line.
+                    while (peek() != '\n' && isAtEnd()) advance();
+                }else {
+                    return;
+                }
+            default:
+                return;
+        }
+    }
+}
+
 Token scanToken() {
+    skipWhiteSpace();
     scanner.start = scanner.current;
     //Function always scan a complete token, so we are always at beginning when we enter function
     if (isAtEnd()) return makeToken(TOKEN_EOF);
