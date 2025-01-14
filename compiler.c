@@ -15,8 +15,10 @@ void compile(const char* source) {
         } else {
             printf(" | ");
         }
-        printf("%2d '%.*s'\n", token.type, token.length, token.start); // Pass the precision of the output as an argument with *.
-
+        // Print token details: type number (width 2), then the lexeme in quotes
+        // %2d - token type padded to 2 chars
+        // %.*s - token text with length specified by token.length
+        printf("%2d '%.*s'\n", token.type, token.length, token.start);
         if (token.type == TOKEN_EOF) break;
     }
 }
