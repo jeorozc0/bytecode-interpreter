@@ -35,6 +35,8 @@ typedef struct {
   Value *values;
 } ValueArray;
 
+bool valuesEqual(Value a, Value b);
+
 // Same functions as the Chunk structure
 void initValueArray(ValueArray *array);
 void writeValueArray(ValueArray *array, Value value);
