@@ -188,6 +188,8 @@ static void unary() {
   case TOKEN_MINUS:
     emitByte(OP_NEGATE);
     break;
+  case TOKEN_BANG:
+    emitByte(OP_NEGATE);
   default:
     return; // Unreachable
   }
