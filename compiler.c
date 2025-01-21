@@ -207,7 +207,8 @@ static void unary() {
     emitByte(OP_NEGATE);
     break;
   case TOKEN_BANG:
-    emitByte(OP_NEGATE);
+    emitByte(OP_NOT);
+    break;
   default:
     return; // Unreachable
   }
