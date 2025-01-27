@@ -18,4 +18,5 @@ add_executable(Craftin_Interpreters main.c
         compiler.h
         compiler.c
         scanner.h
-        scanner.c)
+        scanner.c
+        object.h)
