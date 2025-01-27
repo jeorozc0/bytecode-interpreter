@@ -9,6 +9,7 @@
 
 #include "compiler.h"
 #include "debug.h"
+#include "object.h"
 #include "value.h"
 
 VM vm;
@@ -101,7 +102,17 @@ static InterpretResult run() {
       BINARY_OP(BOOL_VAL, <);
       break;
     case OP_ADD:
-      BINARY_OP(NUMBER_VAL, +);
+      if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
+        concatenate();
+      } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+        double b = AS_NUMBER(pop());
+        double a = AS_NUMBER(pop());
+        push(NUMBER_VAL(a + b));
+      } else {
+        runtimeError("Operands must be two numbers or two "
+                     "strings.");
+        return INTERPRET_RUNTIME_ERROR;
+      }
       break;
     case OP_SUBTRACT:
       BINARY_OP(NUMBER_VAL, -);
