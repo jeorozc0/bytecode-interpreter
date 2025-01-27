@@ -10,23 +10,28 @@
   (type *)allocateObject(sizeof(type), objectType);
 
 static Obj *allocateObject(size_t size, ObjType type) {
-  Obj *object = (Obj *)reallocate(NULL, 0, NULL);
+  Obj *object = (Obj *)reallocate(NULL, 0, size);
   object->type = type;
   return object;
 }
 
-static ObjString *allocateString(char *chars, int lenght) {
+static ObjString *allocateString(char *chars, int length) {
   ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
-  string->lenght = lenght;
+  string->length = length;
   string->chars = chars;
   return string;
 }
 
-ObjString *copyString(const char *chars, int lenght) {
-  char *heapChars = ALLOCATE(char, lenght + 1);
-  memcpy(heapChars, chars, lenght);
-  heapChars[lenght] = '\0';
-  return allocateString(heapChars, lenght);
+ObjString *takeString(char *chars, int length) {
+  return allocateString(chars, length); // Claims ownership of the string given,
+                                        // as it was already copied.
+}
+
+ObjString *copyString(const char *chars, int length) {
+  char *heapChars = ALLOCATE(char, length + 1);
+  memcpy(heapChars, chars, length);
+  heapChars[length] = '\0';
+  return allocateString(heapChars, length);
 }
 
 void printObject(Value value) {
