@@ -34,7 +34,7 @@ typedef struct {
 #define BOOL_VAL(value) ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
-#define OBJ_VAL(value) ((Value){VAL_OBJm{.obj = (Obj *)object}})
+#define OBJ_VAL(value) ((Value){VAL_OBJ{.obj = (Obj *)object}})
 
 // Structure for pool of constants for our opcode to point at
 typedef struct {
