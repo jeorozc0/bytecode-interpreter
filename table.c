@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "object.h"
 #include "value.h"
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/_types/_u_int32_t.h>
@@ -133,6 +134,36 @@ bool tableSet(Table *table, ObjString *key, Value value) {
 
   // Return whether this was a new insertion
   return isNewKey;
+}
+
+/**
+ * Retrieves a value from the hash table given a key.
+ *
+ * This function performs a lookup operation and returns the associated value
+ * through the value pointer if the key is found.
+ *
+ * @param table  Pointer to the hash table to search in
+ * @param key    String key to look up
+ * @param value  Pointer to store the found value (if key exists)
+ * @return bool  true if key was found, false if key doesn't exist
+ */
+bool tableGet(Table *table, ObjString *key, Value *value) {
+  // Early exit if table is empty
+  if (table->count == 0) {
+    return false;
+  }
+
+  // Find the entry for this key using linear probing
+  Entry *entry = findEntry(table->entries, table->capacity, key);
+
+  // If key doesn't exist (found an empty slot), return false
+  if (entry->key == NULL) {
+    return false;
+  }
+
+  // Key found - store the value through the pointer
+  *value = entry->value;
+  return true;
 }
 
 /**
