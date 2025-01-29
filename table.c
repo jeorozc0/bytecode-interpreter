@@ -82,6 +82,7 @@ static void adjustCapacity(Table *table, int capacity) {
   }
 
   // Step 3: Rehash all existing entries into new array
+  table->count = 0;
   for (int i = 0; i < table->capacity; i++) {
     Entry *entry = &table->entries[i];
 
@@ -94,6 +95,7 @@ static void adjustCapacity(Table *table, int capacity) {
     Entry *dest = findEntry(entries, capacity, entry->key);
     dest->key = entry->key;
     dest->value = entry->value;
+    table->count++;
   }
 
   // Step 4: Clean up and update table structure
