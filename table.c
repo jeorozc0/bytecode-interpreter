@@ -35,14 +35,21 @@ void freeTable(Table *table) {
 static Entry *findEntry(Entry *entries, int capacity, ObjString *key) {
   // Calculate initial bucket index using hash modulo capacity
   uint32_t index = key->hash % capacity;
+  Entry *tombstone = NULL;
 
   for (;;) {
     Entry *entry = &entries[index];
-
-    // Return entry if either:
-    // 1. Found matching key (existing entry)
-    // 2. Found empty slot (key == NULL means bucket is available)
-    if (entry->key == key || entry->key == NULL) {
+    if (entry->key == NULL) {
+      if (IS_NIL(entry->value)) {
+        // Empty entry.
+        return tombstone != NULL ? tombstone : entry;
+      } else {
+        // We found a tombstone.
+        if (tombstone == NULL)
+          tombstone = entry;
+      }
+    } else if (entry->key == key) {
+      // We found the key.
       return entry;
     }
 
@@ -124,7 +131,7 @@ bool tableSet(Table *table, ObjString *key, Value value) {
   bool isNewKey = entry->key == NULL;
 
   // Increment count only when inserting a new key
-  if (isNewKey) {
+  if (isNewKey && IS_NIL(entry->value)) {
     table->count++;
   }
 
@@ -163,6 +170,45 @@ bool tableGet(Table *table, ObjString *key, Value *value) {
 
   // Key found - store the value through the pointer
   *value = entry->value;
+  return true;
+}
+
+/**
+ * Removes an entry from the hash table given a key.
+ *
+ * This function implements deletion using tombstone markers to maintain
+ * proper collision chain behavior in open addressing. A tombstone is an
+ * entry marked as deleted (NULL key with true value) rather than never used
+ * (NULL key with NIL_VAL value).
+ *
+ * @param table  Pointer to the hash table
+ * @param key    String key to remove
+ * @return bool  true if key was found and deleted, false if key didn't exist
+ */
+bool tableDelete(Table *table, ObjString *key) {
+  // Early exit if table is empty - no deletion possible
+  if (table->count == 0) {
+    return false;
+  }
+
+  // Find the entry using linear probing
+  Entry *entry = findEntry(table->entries, table->capacity, key);
+
+  // Return false if key doesn't exist
+  if (entry->key == NULL) {
+    return false;
+  }
+
+  // Create a tombstone:
+  // - Set key to NULL to mark as deleted
+  // - Set value to true to indicate this is a tombstone
+  // This distinguishes it from a never-used NULL slot (which has NIL_VAL)
+  entry->key = NULL;
+  entry->value = BOOL_VAL(true);
+
+  // Note: table->count should probably be decremented here
+  // table->count--;
+
   return true;
 }
 
