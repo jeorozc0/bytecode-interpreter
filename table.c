@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "object.h"
 #include "value.h"
+#include <cstddef>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -235,5 +236,54 @@ void tableAddAll(Table *from, Table *to) {
       // in the destination table
       tableSet(to, entry->key, entry->value);
     }
+  }
+}
+
+/**
+ * Searches for a string in the hash table using raw string data and hash.
+ *
+ * This function implements string interning by looking for an existing string
+ * that matches the provided characters, length, and hash. It handles both
+ * empty slots and tombstones during the probe sequence.
+ *
+ * @param table   Pointer to the hash table
+ * @param chars   Raw character array to search for
+ * @param length  Length of the character array
+ * @param hash    Precomputed hash of the string
+ * @return ObjString* Pointer to matching string if found, NULL otherwise
+ */
+ObjString *tableFindString(Table *table, const char *chars, int length,
+                           uint32_t hash) {
+  // Early exit if table is empty
+  if (table->count == 0) {
+    return NULL;
+  }
+
+  // Calculate initial bucket index from hash
+  uint32_t index = hash % table->capacity;
+
+  // Linear probe until we find the string or confirm it's not present
+  for (;;) {
+    Entry *entry = &table->entries[index];
+
+    if (entry->key == NULL) {
+      // Found an empty slot
+      if (IS_NIL(entry->value)) {
+        // If it's a genuine empty slot (not a tombstone),
+        // the string isn't in the table
+        return NULL;
+      }
+      // If it's a tombstone (value is not NIL), continue probing
+    } else if (entry->key->length == length && entry->key->hash == hash &&
+               memcmp(entry->key->chars, chars, length) == 0) {
+      // String found - matches on all three criteria:
+      // 1. Same length
+      // 2. Same hash
+      // 3. Same character contents
+      return entry->key;
+    }
+
+    // Move to next slot, wrapping around if needed
+    index = (index + 1) % table->capacity;
   }
 }
