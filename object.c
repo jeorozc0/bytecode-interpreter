@@ -25,6 +25,8 @@ static ObjString *allocateString(char *chars, int length, u_int32_t hash) {
   string->length = length;
   string->chars = chars;
   string->hash = hash;
+  printf("DEBUG allocateString: created string=%p hash=%u chars='%s'\n",
+         (void *)string, hash, chars);
   return string;
 }
 
@@ -37,27 +39,38 @@ static u_int32_t hashString(const char *key, int length) {
   return hash;
 }
 
+// claims ownership of `chars` passed in
 ObjString *takeString(char *chars, int length) {
-  u_int32_t hash = hashString(chars, length);
+  uint32_t hash = hashString(chars, length);
+
+  // if already exist a same string, return the reference to it
   ObjString *interned = tableFindString(&vm.strings, chars, length, hash);
   if (interned != NULL) {
+    // already obtained ownership, no longer need the duplicate string
     FREE_ARRAY(char, chars, length + 1);
     return interned;
   }
-  return allocateString(chars, length,
-                        hash); // Claims ownership of the string given,
-                               // as it was already copied.
+
+  return allocateString(chars, length, hash);
 }
 
+// copy the characters into heap, so every ObjString owns its char array and can
+// free it assumes it can not take ownership of `chars` passed in
 ObjString *copyString(const char *chars, int length) {
-  u_int32_t hash = hashString(chars, length);
+  uint32_t hash = hashString(chars, length);
+
+  // if already exist a same string, just return the reference to it, and skip
+  // the copying
   ObjString *interned = tableFindString(&vm.strings, chars, length, hash);
-  if (interned != NULL) {
+  if (interned != NULL)
     return interned;
-  }
+
   char *heapChars = ALLOCATE(char, length + 1);
   memcpy(heapChars, chars, length);
+  // make a null-terminated c-string for ease of use
   heapChars[length] = '\0';
+  printf("DEBUG allocateString: created string=%p hash=%u chars='%s'\n",
+         (void *)interned, hash, chars);
   return allocateString(heapChars, length, hash);
 }
 

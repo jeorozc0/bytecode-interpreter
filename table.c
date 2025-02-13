@@ -3,6 +3,7 @@
 #include "object.h"
 #include "value.h"
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/_types/_u_int32_t.h>
@@ -39,6 +40,8 @@ static Entry *findEntry(Entry *entries, int capacity, ObjString *key) {
 
   for (;;) {
     Entry *entry = &entries[index];
+    printf("DEBUG findEntry: comparing key=%p entry->key=%p\n", (void *)key,
+           (void *)entry->key);
     if (entry->key == NULL) {
       if (IS_NIL(entry->value)) {
         // Empty entry.
