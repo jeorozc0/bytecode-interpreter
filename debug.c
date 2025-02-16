@@ -23,6 +23,15 @@ static int simpleInstruction(const char *name, int offset) {
   return offset + 1;
 }
 
+// Prints a byte instruction with its associated slot number and returns the
+// next instruction offset. Used for debug printing of bytecode instructions
+// that take a single byte operand.
+static int byteInstruction(const char *name, Chunk *chunk, int offset) {
+  uint8_t slot = chunk->code[offset + 1];
+  printf("%-16s %4d\n", name, slot);
+  return offset + 2;
+}
+
 static int constantInstruction(const char *name, Chunk *chunk, int offset) {
   uint8_t constant = chunk->code[offset + 1];
   /* Print name of opcode, and pull the constant index from the
@@ -65,6 +74,10 @@ int disassembleInstruction(Chunk *chunk, int offset) {
     return simpleInstruction("OP_FALSE", offset);
   case OP_POP:
     return simpleInstruction("OP_POP", offset);
+  case OP_GET_LOCAL:
+    return byteInstruction("OP_GET_LOCAL", chunk, offset);
+  case OP_SET_LOCAL:
+    return byteInstruction("OP_SET_LOCAL", chunk, offset);
   case OP_GET_GLOBAL:
     return constantInstruction("OP_GET_GLOBAL", chunk, offset);
   case OP_DEFINE_GLOBAL:
