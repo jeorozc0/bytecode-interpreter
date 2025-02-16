@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 
 #include "chunk.h"
@@ -32,6 +33,21 @@ static int byteInstruction(const char *name, Chunk *chunk, int offset) {
   return offset + 2;
 }
 
+// Disassembles a jump instruction by decoding its offset and printing debug
+// info
+static int jumpInstruction(const char *name, int sign, Chunk *chunk,
+                           int offset) {
+  // Reconstruct 16-bit jump offset from two bytes, big-endian
+  uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 8); // High byte
+  jump |= chunk->code[offset + 2];                          // Low byte
+
+  // Print instruction name and show jump from current -> target position
+  printf("%-16s %4d -> %d\n", name, offset,
+         offset + 3 + sign * jump); // +3 skips opcode and operand bytes
+
+  return offset + 3; // Return position of next instruction
+}
+
 static int constantInstruction(const char *name, Chunk *chunk, int offset) {
   uint8_t constant = chunk->code[offset + 1];
   /* Print name of opcode, and pull the constant index from the
@@ -62,6 +78,10 @@ int disassembleInstruction(Chunk *chunk, int offset) {
   /* We switch on the given instruction, printing any bug
    * in the compiler*/
   switch (instruction) {
+  case OP_JUMP:
+    return jumpInstruction("OP_JUMP", 1, chunk, offset);
+  case OP_JUMP_IF_FALSE:
+    return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
   case OP_RETURN:
     return simpleInstruction("OP_RETURN", offset);
   case OP_CONSTANT:
