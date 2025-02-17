@@ -54,7 +54,8 @@ typedef struct {
 
 typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 
-typedef struct {
+typedef struct Compiler {
+  struct Compiler *enclosing;
   ObjFunction *function;
   FunctionType type;
 
@@ -203,6 +204,8 @@ static void patchJump(int offset) {
 
 // Initializes a new compiler instance for function compilation
 static void initCompiler(Compiler *compiler, FunctionType type) {
+  // Capture about-to-no-longer-be-current compiler
+  compiler->enclosing = current;
   // Initially set function to NULL before proper initialization
   compiler->function = NULL;
 
@@ -246,6 +249,7 @@ static ObjFunction *endCompiler() {
   }
 #endif
 
+  current = current->enclosing;
   return function;
 }
 
