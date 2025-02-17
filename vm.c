@@ -143,16 +143,12 @@ static InterpretResult run() {
     }
     case OP_DEFINE_GLOBAL: {
       ObjString *name = READ_STRING();
-      printf("DEBUG: Defining global name=%p chars='%s' hash=%u\n",
-             (void *)name, name->chars, name->hash);
       tableSet(&vm.globals, name, peek(0));
       pop();
       break;
     }
     case OP_GET_GLOBAL: {
       ObjString *name = READ_STRING();
-      printf("DEBUG: Looking up global name=%p chars='%s' hash=%u\n",
-             (void *)name, name->chars, name->hash);
       Value value;
       if (!tableGet(&vm.globals, name, &value)) {
         runtimeError("Undefined variable '%s'.", name->chars);

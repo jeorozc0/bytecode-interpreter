@@ -16,6 +16,11 @@ void initScanner(const char *source) {
   scanner.start = source;
   scanner.current = source;
   scanner.line = 1;
+
+  const char *p = source;
+  while (*p) {
+    p++;
+  }
 }
 
 static bool isAlpha(char c) {
@@ -68,7 +73,11 @@ static bool match(char expected) {
   return true;
 }
 
-static void skipWhiteSpace() {
+/**
+ * @brief Loop, skipping all whitespaces, and breaking once we don't encounter
+ * any
+ */
+static void skipWhitespace() {
   for (;;) {
     char c = peek();
     switch (c) {
@@ -83,12 +92,13 @@ static void skipWhiteSpace() {
       break;
     case '/':
       if (peekNext() == '/') {
-        // A comment goes until the end of the line.
-        while (peek() != '\n' && isAtEnd())
+        // A comment goes until the end of the line
+        while (peek() != '\n' && !isAtEnd())
           advance();
       } else {
         return;
       }
+      break;
     default:
       return;
     }
@@ -121,7 +131,7 @@ static TokenType identifierType() {
       case 'o':
         return checkKeyword(2, 1, "r", TOKEN_FOR);
       case 'u':
-        return checkKeyword(2, 1, "n", TOKEN_FUN);
+        return checkKeyword(2, 2, "nc", TOKEN_FUNC);
       }
     }
     break;
@@ -181,12 +191,13 @@ static Token string() {
 }
 
 Token scanToken() {
-  skipWhiteSpace();
+  skipWhitespace();
   scanner.start = scanner.current;
   // Function always scan a complete token, so we are always at beginning when
   // we enter function
-  if (isAtEnd())
+  if (isAtEnd()) {
     return makeToken(TOKEN_EOF);
+  }
 
   char c = advance(); // Reads next character from source code
   if (isAlpha(c))

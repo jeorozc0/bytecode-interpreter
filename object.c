@@ -43,8 +43,6 @@ static ObjString *allocateString(char *chars, int length, u_int32_t hash) {
   string->length = length;
   string->chars = chars;
   string->hash = hash;
-  printf("DEBUG allocateString: created string=%p hash=%u chars='%s'\n",
-         (void *)string, hash, chars);
   return string;
 }
 
@@ -87,8 +85,6 @@ ObjString *copyString(const char *chars, int length) {
   memcpy(heapChars, chars, length);
   // make a null-terminated c-string for ease of use
   heapChars[length] = '\0';
-  printf("DEBUG allocateString: created string=%p hash=%u chars='%s'\n",
-         (void *)interned, hash, chars);
   return allocateString(heapChars, length, hash);
 }
 

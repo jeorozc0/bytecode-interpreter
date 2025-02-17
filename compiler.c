@@ -221,6 +221,11 @@ static void initCompiler(Compiler *compiler, FunctionType type) {
 
   // Make this the currently active compiler
   current = compiler;
+  // Copy name of function if we are not at top level
+  if (type != TYPE_SCRIPT) {
+    current->function->name =
+        copyString(parser.previous.start, parser.previous.length);
+  }
 
   // Initialize slot zero for implicit 'this' in methods
   // or the function itself in function declarations
@@ -312,7 +317,7 @@ static void declareVariable() {
     return;
 
   Token *name = &parser.previous;
-  for (int i = current->localCount - 1; i >= 0; i++) {
+  for (int i = current->localCount - 1; i >= 0; i--) {
     Local *local = &current->locals[i];
     if (local->depth != -1 && local->depth < current->scopeDepth)
       break;
@@ -323,13 +328,20 @@ static void declareVariable() {
   addLocal(*name);
 }
 
+// Parse a variable declaration and return its identifier's constant table index
 static uint8_t parseVariable(const char *errorMessage) {
+  // Expect and consume a variable name
   consume(TOKEN_IDENTIFIER, errorMessage);
 
+  // Add variable to current scope's declarations
   declareVariable();
+
+  // For local variables (non-zero scope depth), return 0
+  // since they don't need a constant table entry
   if (current->scopeDepth > 0)
     return 0;
 
+  // For global variables, add name to constant table and return index
   return identifierConstant(&parser.previous);
 }
 
@@ -438,7 +450,24 @@ static void function(FunctionType type) {
 
   // Parse function syntax
   consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
-  // Here we'll later add parameter parsing
+  // Parse function parameters until we hit the closing parenthesis
+  if (!check(TOKEN_RIGHT_PAREN)) {
+    do {
+      // Track number of parameters
+      current->function->arity++;
+
+      // Check parameter limit (bytecode restriction)
+      if (current->function->arity > 255) {
+        errorAtCurrent("Can't have more than 255 parameters.");
+      }
+
+      // Parse parameter name as a local variable
+      uint8_t constant = parseVariable("Expect parameter name.");
+
+      // Define it immediately (parameters are pre-initialized)
+      defineVariable(constant);
+    } while (match(TOKEN_COMMA)); // Continue if there are more parameters
+  }
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
   consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
 
@@ -487,8 +516,9 @@ static void varDeclaration() {
   defineVariable(global);
 }
 
-// evaluate the expression and discard the result
-// used to invoke side effect
+/**
+ * @brief An expression, followed by a semicolon.
+ */
 static void expressionStatement() {
   expression();
   consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
@@ -619,7 +649,7 @@ static void synchronize() {
     // usually one of the control flow or declaration keywords
     switch (parser.current.type) {
     case TOKEN_CLASS:
-    case TOKEN_FUN:
+    case TOKEN_FUNC:
     case TOKEN_VAR:
     case TOKEN_FOR:
     case TOKEN_IF:
@@ -636,16 +666,16 @@ static void synchronize() {
 }
 
 static void declaration() {
-  if (match(TOKEN_FUN)) {
+  if (match(TOKEN_FUNC)) {
+    printf("Matched FUNC\n");
     funcDeclaration();
   } else if (match(TOKEN_VAR)) {
+    printf("Matched VAR\n");
     varDeclaration();
   } else {
     statement();
   }
 
-  // if we hit a compile error while parsing the previous statement, enter
-  // panic mode after the erroneous statement, start synchronizing
   if (parser.panicMode)
     synchronize();
 }
@@ -790,7 +820,7 @@ ParseRule rules[] = {
     [TOKEN_ELSE] = {NULL, NULL, PREC_NONE},
     [TOKEN_FALSE] = {literal, NULL, PREC_NONE},
     [TOKEN_FOR] = {NULL, NULL, PREC_NONE},
-    [TOKEN_FUN] = {NULL, NULL, PREC_NONE},
+    [TOKEN_FUNC] = {NULL, NULL, PREC_NONE},
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
     [TOKEN_NIL] = {literal, NULL, PREC_NONE},
     [TOKEN_OR] = {NULL, or_, PREC_OR},
