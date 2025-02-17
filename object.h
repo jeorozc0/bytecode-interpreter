@@ -1,6 +1,7 @@
 #ifndef clox_object_h
 #define clox_object_h
 
+#include "chunk.h"
 #include "common.h"
 #include "value.h"
 #include <sys/_types/_u_int32_t.h>
@@ -14,12 +15,20 @@
 
 typedef enum {
   OBJ_STRING,
+  OBJ_FUNCTION,
 } ObjType;
 
 struct Obj {
   ObjType type;
   struct Obj *next; // pointer to the next Obj in linked list
 };
+
+typedef struct {
+  Obj obj;
+  int arity;
+  Chunk chunk;
+  ObjString *name;
+} ObjFunction;
 
 struct ObjString {
   Obj obj;
@@ -28,6 +37,7 @@ struct ObjString {
   u_int32_t hash;
 };
 
+ObjFunction *newFunction();
 ObjString *takeString(char *chars, int length);
 ObjString *copyString(const char *chars, int lenght);
 void printObject(Value value);

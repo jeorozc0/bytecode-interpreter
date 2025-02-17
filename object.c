@@ -3,6 +3,7 @@
 #include <sys/_types/_u_int32_t.h>
 #include <sys/_types/_u_int8_t.h>
 
+#include "chunk.h"
 #include "memory.h"
 #include "object.h"
 #include "value.h"
@@ -18,6 +19,23 @@ static Obj *allocateObject(size_t size, ObjType type) {
   object->next = vm.objects;
   vm.objects = object;
   return object;
+}
+
+// Creates and initializes a new function object
+ObjFunction *newFunction() {
+  // Allocate memory for function object and tag it as OBJ_FUNCTION type
+  ObjFunction *function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+
+  // Initialize function with no parameters (arity of 0)
+  function->arity = 0;
+
+  // Function starts with no name (anonymous function)
+  function->name = NULL;
+
+  // Initialize the function's bytecode chunk
+  initChunk(&function->chunk);
+
+  return function;
 }
 
 static ObjString *allocateString(char *chars, int length, u_int32_t hash) {
