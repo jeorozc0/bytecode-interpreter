@@ -359,6 +359,21 @@ static void defineVariable(uint8_t global) {
   emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
+static uint8_t argumentList() {
+  uint8_t argCount = 0;
+  if (!check(TOKEN_RIGHT_PAREN)) {
+    do {
+      expression();
+      if (argCount == 255) {
+        error("Can't have more than 255 arguments.");
+      }
+      argCount++;
+    } while (match(TOKEN_COMMA));
+  }
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+  return argCount;
+}
+
 static void and_(bool canAssign) {
   int endJump = emitJump(OP_JUMP_IF_FALSE);
 
@@ -409,6 +424,16 @@ static void binary(bool canAssign) {
   default:
     return; // Unreachable.
   }
+}
+
+// Compiles a function call expression
+static void call(bool canAssign) {
+  // Parse argument list and get argument count
+  uint8_t argCount = argumentList();
+
+  // Emit call instruction with argument count
+  // (callee is already on stack from parsing prefix)
+  emitBytes(OP_CALL, argCount);
 }
 
 // directly push true/false/nil on the stack
@@ -793,7 +818,7 @@ static void unary(bool canAssign) {
 }
 
 ParseRule rules[] = {
-    [TOKEN_LEFT_PAREN] = {grouping, NULL, PREC_NONE},
+    [TOKEN_LEFT_PAREN] = {grouping, call, PREC_NONE},
     [TOKEN_RIGHT_PAREN] = {NULL, NULL, PREC_NONE},
     [TOKEN_LEFT_BRACE] = {NULL, NULL, PREC_NONE},
     [TOKEN_RIGHT_BRACE] = {NULL, NULL, PREC_NONE},
