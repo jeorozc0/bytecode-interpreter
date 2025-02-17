@@ -7,6 +7,7 @@
 #include "chunk.h"
 #include "common.h"
 #include "compiler.h"
+#include "object.h"
 #include "scanner.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -51,7 +52,12 @@ typedef struct {
   int depth;
 } Local;
 
+typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
+
 typedef struct {
+  ObjFunction *function;
+  FunctionType type;
+
   Local locals[UINT8_COUNT];
   int localCount;
   int scopeDepth;
@@ -59,9 +65,8 @@ typedef struct {
 
 Parser parser;
 Compiler *current = NULL;
-Chunk *compilingChunk;
 
-static Chunk *currentChunk() { return compilingChunk; }
+static Chunk *currentChunk() { return &current->function->chunk; }
 
 static void errorAt(Token *token, const char *message) {
   // if in panic mode, suppress error
@@ -196,21 +201,52 @@ static void patchJump(int offset) {
   currentChunk()->code[offset + 1] = jump & 0xff;    // Low byte
 }
 
-static void initCompiler(Compiler *compiler) {
+// Initializes a new compiler instance for function compilation
+static void initCompiler(Compiler *compiler, FunctionType type) {
+  // Initially set function to NULL before proper initialization
+  compiler->function = NULL;
+
+  // Set the type of function being compiled (script, function )
+  compiler->type = type;
+
+  // Reset local variable tracking
   compiler->localCount = 0;
   compiler->scopeDepth = 0;
+
+  // Create a new function object to hold the compiled code
+  compiler->function = newFunction();
+
+  // Make this the currently active compiler
   current = compiler;
+
+  // Initialize slot zero for implicit 'this' in methods
+  // or the function itself in function declarations
+  Local *local = &current->locals[current->localCount++];
+  local->depth = 0;
+  local->name.start = ""; // Empty name for implicit variables
+  local->name.length = 0;
 }
 
-static void endCompiler() {
-  // in this chapter, our VM only deals with one expression.
+// Finalizes compilation of a function and returns the compiled function object
+static ObjFunction *endCompiler() {
+  // Emit return instruction to ensure all functions return properly
   emitReturn();
 
+  // Get the completed function object from current compiler
+  ObjFunction *function = current->function;
+
 #ifdef DEBUG_PRINT_CODE
+  // If compilation was successful and debug mode is on,
+  // disassemble the chunk for debugging
   if (!parser.hadError) {
-    disassembleChunk(currentChunk(), "code");
+    disassembleChunk(currentChunk(),
+                     // Use function name if available, otherwise "script"
+                     function->name != NULL ? function->name->chars
+                                            : "scrtipt");
   }
 #endif
+
+  return function;
 }
 
 static void beginScope() { current->scopeDepth++; }
@@ -761,23 +797,32 @@ static void parsePrecedence(Precedence precedence) {
 // exists solely to handle a declaration cycle in the C code
 static ParseRule *getRule(TokenType type) { return &rules[type]; }
 
-bool compile(const char *source, Chunk *chunk) {
+// Main compilation function that turns source code into a function object
+ObjFunction *compile(const char *source) {
+  // Initialize the scanner with source code
   initScanner(source);
-  Compiler compiler;
-  initCompiler(&compiler);
-  compilingChunk = chunk;
 
+  // Set up a compiler for top-level script code
+  Compiler compiler;
+  initCompiler(&compiler, TYPE_SCRIPT);
+
+  // Reset parser error state
   parser.hadError = false;
   parser.panicMode = false;
 
+  // Prime the parser with first token
   advance();
 
-  // keep compiling declarations until hit the end
+  // Main compilation loop:
+  // Keep processing declarations until we hit end of file
   while (!match(TOKEN_EOF)) {
     declaration();
   }
 
-  consume(TOKEN_EOF, "Expect end of expression.");
-  endCompiler();
-  return !parser.hadError;
+  // Finish compilation and get resulting function
+  ObjFunction *function = endCompiler();
+
+  // Return NULL if there were any errors, otherwise return the compiled
+  // function
+  return parser.hadError ? NULL : function;
 }
