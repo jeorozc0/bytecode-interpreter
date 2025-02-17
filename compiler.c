@@ -413,6 +413,65 @@ static void expressionStatement() {
   emitByte(OP_POP);
 }
 
+// Compiles a for loop with optional initialization, condition, and increment
+static void forStatement() {
+  // Create scope for loop variable if any
+  beginScope();
+
+  // Parse initializer
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
+  if (match(TOKEN_SEMICOLON)) {
+    // No initializer
+  } else if (match(TOKEN_VAR)) {
+    varDeclaration();
+  } else {
+    expressionStatement();
+  }
+
+  // Store start of loop body
+  int loopStart = currentChunk()->count;
+  int exitJump = -1;
+
+  // Parse condition
+  if (!match(TOKEN_SEMICOLON)) {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after loop condition.");
+
+    // Jump out of loop if condition is false
+    exitJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP); // Pop condition value
+  }
+
+  // Parse increment
+  if (!match(TOKEN_RIGHT_PAREN)) {
+    // Jump over increment to start of body
+    int bodyJump = emitJump(OP_JUMP);
+
+    // Compile increment expression
+    int incrementStart = currentChunk()->count;
+    expression();
+    emitByte(OP_POP); // Pop increment value
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
+
+    // After body, jump to increment
+    emitLoop(loopStart);
+    loopStart = incrementStart;
+    patchJump(bodyJump);
+  }
+
+  // Compile body
+  statement();
+  emitLoop(loopStart);
+
+  // Patch condition exit jump if present
+  if (exitJump != -1) {
+    patchJump(exitJump);
+    emitByte(OP_POP);
+  }
+
+  endScope();
+}
+
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   expression();
@@ -510,9 +569,10 @@ static void declaration() {
 static void statement() {
   if (match(TOKEN_PRINT)) {
     printStatement();
+  } else if (match(TOKEN_FOR)) {
+    forStatement();
   } else if (match(TOKEN_IF)) {
     ifStatement();
-
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
