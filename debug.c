@@ -78,6 +78,8 @@ int disassembleInstruction(Chunk *chunk, int offset) {
   /* We switch on the given instruction, printing any bug
    * in the compiler*/
   switch (instruction) {
+  case OP_LOOP:
+    return jumpInstruction("OP_LOOP", -1, chunk, offset);
   case OP_JUMP:
     return jumpInstruction("OP_JUMP", 1, chunk, offset);
   case OP_JUMP_IF_FALSE:

@@ -133,6 +133,24 @@ static void emitByte(uint8_t byte) {
   writeChunk(currentChunk(), byte, parser.previous.line);
 }
 
+// Emits a backward jump instruction for loops
+static void emitLoop(int loopStart) {
+  // Emit the loop instruction opcode
+  emitByte(OP_LOOP);
+
+  // Calculate how far backward to jump:
+  // Current position - loop start + 2 bytes for offset operand
+  int offset = currentChunk()->count - loopStart + 2;
+
+  // Ensure loop body fits in 16-bit offset
+  if (offset > UINT16_MAX)
+    error("Loop body too large.");
+
+  // Emit the 16-bit offset in big-endian format:
+  emitByte((offset >> 8) & 0xff); // High byte
+  emitByte(offset & 0xff);        // Low byte
+}
+
 static void emitBytes(uint8_t byte1, uint8_t byte2) {
   emitByte(byte1);
   emitByte(byte2);
@@ -422,6 +440,31 @@ static void printStatement() {
   emitByte(OP_PRINT);
 }
 
+// Compiles a while statement, handling the condition and loop body
+static void whileStatement() {
+  // Store the position where we'll loop back to
+  int loopStart = currentChunk()->count;
+
+  // Parse and compile the condition
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after 'while'.");
+
+  // Emit jump to exit the loop if condition is false
+  int exitJump = emitJump(OP_JUMP_IF_FALSE);
+  emitByte(OP_POP); // Pop condition value before executing body
+
+  // Compile the loop body
+  statement();
+
+  // Emit backward jump to return to start of loop
+  emitLoop(loopStart);
+
+  // Patch the exit jump to point here
+  patchJump(exitJump);
+  emitByte(OP_POP); // Pop condition value in exit case
+}
+
 // skip tokens until we reach something that looks like a statement boundary
 static void synchronize() {
   parser.panicMode = false;
@@ -469,6 +512,9 @@ static void statement() {
     printStatement();
   } else if (match(TOKEN_IF)) {
     ifStatement();
+
+  } else if (match(TOKEN_WHILE)) {
+    whileStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
     beginScope();
     block();
