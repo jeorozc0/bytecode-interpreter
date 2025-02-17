@@ -40,8 +40,6 @@ static Entry *findEntry(Entry *entries, int capacity, ObjString *key) {
 
   for (;;) {
     Entry *entry = &entries[index];
-    printf("DEBUG findEntry: comparing key=%p entry->key=%p\n", (void *)key,
-           (void *)entry->key);
     if (entry->key == NULL) {
       if (IS_NIL(entry->value)) {
         // Empty entry.
@@ -51,7 +49,9 @@ static Entry *findEntry(Entry *entries, int capacity, ObjString *key) {
         if (tombstone == NULL)
           tombstone = entry;
       }
-    } else if (entry->key == key) {
+    } else if (entry->key->hash == key->hash &&
+         entry->key->length == key->length &&
+         memcmp(entry->key->chars, key->chars, key->length) == 0) {
       // We found the key.
       return entry;
     }
