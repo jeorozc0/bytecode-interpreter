@@ -29,11 +29,21 @@ static void runtimeError(const char *format, ...) {
   va_start(args, format);
   vfprintf(stderr, format, args);
   va_end(args);
+  fputs("\n", stderr);
 
-  CallFrame *frame = &vm.frames[vm.frameCount - 1];
-  size_t instruction = frame->ip - frame->function->chunk.code - 1;
-  int line = frame->function->chunk.lines[instruction];
-  fprintf(stderr, "[line %d] in script\n", line);
+  for (int i = vm.frameCount - 1; i >= 0; i--) {
+    CallFrame *frame = &vm.frames[i];
+    ObjFunction *function = frame->function;
+    size_t instruction = frame->ip - function->chunk.code - 1;
+    fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
+    if (function->name == NULL) {
+      fprintf(stderr, "script\n");
+    } else {
+      fprintf(stderr, "%s()\n", function->name->chars);
+    }
+  }
+
+  resetStack();
 }
 
 void initVM() {
@@ -64,6 +74,18 @@ static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
 
 // Sets up a new call frame for a function invocation
 static bool call(ObjFunction *function, int argCount) {
+  // Check if correct amount of arguments are passed to function.
+  if (argCount != function->arity) {
+    runtimeError("Expected %d arguments but got %d.", function->arity,
+                 argCount);
+    return false;
+  }
+
+  if (vm.frameCount == FRAMES_MAX) {
+    // Check if the call stack has reached its maximum allowed size.
+    runtimeError("Stack overflow.");
+    return false;
+  }
   // Get the next available call frame
   CallFrame *frame = &vm.frames[vm.frameCount++];
 
