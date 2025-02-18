@@ -639,6 +639,24 @@ static void printStatement() {
   emitByte(OP_PRINT);
 }
 
+static void returnStatement() {
+  // Handle return statements.
+  if (current->type == TYPE_SCRIPT) {
+    error("Cant't return from top-level code.");
+  }
+  if (match(TOKEN_SEMICOLON)) {
+    // If the return statement is just "return;", emit a simple return.
+    emitReturn();
+  } else {
+    // If the return statement has a value, parse the expression.
+    expression();
+    // Ensure the return statement is terminated with a semicolon.
+    consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+    // Emit the return opcode, which will return the value on the stack.
+    emitByte(OP_RETURN);
+  }
+}
+
 // Compiles a while statement, handling the condition and loop body
 static void whileStatement() {
   // Store the position where we'll loop back to
@@ -715,6 +733,8 @@ static void statement() {
     forStatement();
   } else if (match(TOKEN_IF)) {
     ifStatement();
+  } else if (match(TOKEN_RETURN)) {
+    returnStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
