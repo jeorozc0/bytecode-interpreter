@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/_types/_u_int16_t.h>
 #include <sys/_types/_va_list.h>
+#include <time.h>
 
 #include "compiler.h"
 #include "debug.h"
@@ -18,6 +19,10 @@
 #include "value.h"
 
 VM vm;
+
+static Value clockNative(int argCount, Value *args) {
+  return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+}
 
 static void resetStack() {
   vm.stackTop = vm.stack;
@@ -44,6 +49,21 @@ static void runtimeError(const char *format, ...) {
   }
 
   resetStack();
+}
+
+static void defineNative(const char *name, NativeFn function) {
+  // Create a string object for the native function's name.
+  push(OBJ_VAL(copyString(name, (int)strlen(name))));
+  // Create a native function object wrapping the C function pointer.
+  push(OBJ_VAL(newNative(function)));
+  // Store the native function in the global variable table, associating
+  // the function name with the native function object.
+  tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+  // Pop the name and the function object from the stack.  These were
+  // only pushed to protect them from garbage collection during the
+  // tableSet operation.
+  pop();
+  pop();
 }
 
 void initVM() {
@@ -110,7 +130,17 @@ static bool callValue(Value callee, int argCount) {
     case OBJ_FUNCTION:
       // If it's a function, set up call frame and execute it
       return call(AS_FUNCTION(callee), argCount);
-
+    case OBJ_NATIVE: {
+      // Handle calls to native (C) functions.
+      NativeFn native = AS_NATIVE(callee); // Get the native function pointer.
+      // Call the native function with the given arguments.
+      Value result = native(argCount, vm.stackTop - argCount);
+      // Pop the arguments and the function itself from the stack.
+      vm.stackTop -= argCount + 1;
+      // Push the result of the native function call onto the stack.
+      push(result);
+      return true; // Indicate successful execution.
+    }
     default:
       break; // Other object types aren't callable yet
     }
