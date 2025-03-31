@@ -1,34 +1,30 @@
-# Prerequisites
-*.d
+# Build directories
+/build/
+/obj/
 
-# Object files
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# Compiled object files, static and dynamic libraries, and executables
 *.o
 *.ko
 *.obj
 *.elf
 
-# Linker output
-*.ilk
-*.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
 *.a
 *.la
 *.lo
 
-# Shared objects (inc. Windows DLLs)
-*.dll
 *.so
 *.so.*
 *.dylib
+*.dll
 
-# Executables
 *.exe
 *.out
 *.app
@@ -36,19 +32,22 @@
 *.x86_64
 *.hex
 
+# Precompiled headers
+*.gch
+*.pch
+
 # Debug files
 *.dSYM/
 *.su
 *.idb
 *.pdb
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-/cmake-build-debug/
-.idea/
+# Logs and temporary files
+*.log
+*.tmp
+*~
+
+# macOS specific files
+.DS_Store
+.idea
+
